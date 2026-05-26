@@ -10,22 +10,46 @@
 
 body{
 font-family:tahoma;
-background:#f4f4f4;
+background:#f3f4f6;
 padding:40px;
 }
 
 .container{
-max-width:500px;
+max-width:600px;
 margin:auto;
 background:white;
 padding:30px;
-border-radius:15px;
-box-shadow:0 0 10px rgba(0,0,0,.1);
+border-radius:20px;
+box-shadow:0 0 15px rgba(0,0,0,.1);
 }
 
-h1{
-text-align:center;
-margin-bottom:30px;
+.tabs{
+display:flex;
+gap:10px;
+margin-bottom:25px;
+}
+
+.tab-btn{
+flex:1;
+padding:15px;
+border:none;
+border-radius:10px;
+cursor:pointer;
+font-size:18px;
+background:#e5e7eb;
+}
+
+.active{
+background:#0f172a;
+color:white;
+}
+
+.tab{
+display:none;
+}
+
+.show{
+display:block;
 }
 
 input{
@@ -40,22 +64,23 @@ font-size:16px;
 button{
 width:100%;
 padding:15px;
-background:#0f172a;
-color:white;
 border:none;
 border-radius:10px;
 font-size:18px;
 cursor:pointer;
+background:#16a34a;
+color:white;
 }
 
 button:hover{
-background:#1e293b;
+opacity:.9;
 }
 
-#message{
-margin-top:20px;
+.total{
+font-size:28px;
+font-weight:bold;
 text-align:center;
-font-size:18px;
+margin:20px 0;
 }
 
 </style>
@@ -65,25 +90,104 @@ font-size:18px;
 
 <div class="container">
 
-<h1>حجز استراحة</h1>
-
-<input type="text" id="name" placeholder="اسم العميل">
-
-<input type="text" id="phone" placeholder="رقم الجوال">
-
-<input type="number" id="hours" placeholder="عدد الساعات">
-
-<input type="number" id="total" placeholder="الإجمالي">
-
-<button onclick="saveBooking()">
-تأكيد الحجز
+<div class="tabs">
+<button class="tab-btn active"
+onclick="showTab('booking', this)">
+الحجز
 </button>
 
-<div id="message"></div>
+<button class="tab-btn"
+onclick="showTab('payment', this)">
+الدفع
+</button>
+</div>
+
+<!-- تبويب الحجز -->
+
+<div id="booking" class="tab show">
+
+<h2>بيانات الحجز</h2>
+
+<input type="text"
+id="name"
+placeholder="اسم العميل">
+
+<input type="text"
+id="phone"
+placeholder="رقم الجوال">
+
+<input type="number"
+id="hours"
+placeholder="عدد الساعات"
+oninput="calcTotal()">
+
+<div class="total">
+الإجمالي:
+<span id="total">0</span>
+ريال
+</div>
+
+<button onclick="saveBooking()">
+حفظ الحجز
+</button>
+
+</div>
+
+<!-- تبويب الدفع -->
+
+<div id="payment" class="tab">
+
+<h2>الدفع</h2>
+
+<div class="total">
+المبلغ المطلوب:
+<span id="paymentTotal">0</span>
+ريال
+</div>
+
+<button>
+دفع الآن
+</button>
+
+</div>
 
 </div>
 
 <script>
+
+function showTab(id, btn){
+
+document.querySelectorAll(".tab")
+.forEach(tab=>{
+tab.classList.remove("show");
+});
+
+document.getElementById(id)
+.classList.add("show");
+
+document.querySelectorAll(".tab-btn")
+.forEach(b=>{
+b.classList.remove("active");
+});
+
+btn.classList.add("active");
+
+}
+
+function calcTotal(){
+
+const hours =
+document.getElementById("hours").value || 0;
+
+const total = hours * 50;
+
+document.getElementById("total")
+.innerText = total;
+
+document.getElementById("paymentTotal")
+.innerText = total;
+
+}
 
 async function saveBooking(){
 
@@ -97,7 +201,7 @@ const hours =
 document.getElementById("hours").value;
 
 const total =
-document.getElementById("total").value;
+document.getElementById("total").innerText;
 
 const response = await fetch("/book",{
 
@@ -120,13 +224,11 @@ const data = await response.json();
 
 if(data.success){
 
-document.getElementById("message").innerHTML =
-"✅ تم الحجز بنجاح";
+alert("تم حفظ الحجز بنجاح");
 
 }else{
 
-document.getElementById("message").innerHTML =
-"❌ فشل الحجز";
+alert("فشل الحفظ");
 
 }
 
