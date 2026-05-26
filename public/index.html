@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>حجز شاليه</title>
+
+<style>
+
+body{
+    font-family:Tahoma;
+    background:#f3f4f6;
+    margin:0;
+    padding:20px;
+}
+
+.box{
+    max-width:450px;
+    margin:auto;
+    background:white;
+    padding:20px;
+    border-radius:20px;
+    box-shadow:0 0 15px rgba(0,0,0,0.1);
+}
+
+h1{
+    text-align:center;
+}
+
+.chalet{
+    background:#eff6ff;
+    padding:15px;
+    border-radius:12px;
+    text-align:center;
+    font-size:22px;
+    font-weight:bold;
+}
+
+label{
+    display:block;
+    margin-top:20px;
+}
+
+input{
+    width:100%;
+    padding:12px;
+    border-radius:10px;
+    border:1px solid #ccc;
+    margin-top:10px;
+    font-size:16px;
+    box-sizing:border-box;
+}
+
+.total{
+    text-align:center;
+    font-size:24px;
+    margin-top:20px;
+    font-weight:bold;
+}
+
+button{
+    width:100%;
+    padding:14px;
+    margin-top:20px;
+    border:none;
+    border-radius:10px;
+    background:#16a34a;
+    color:white;
+    font-size:17px;
+    cursor:pointer;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="box">
+
+<h1>حجز الشاليه</h1>
+
+<div class="chalet">
+شاليه
+</div>
+
+<form action="/create-invoice" method="POST">
+
+<label>
+عدد الساعات
+</label>
+
+<input
+type="number"
+name="hours"
+id="hours"
+value="1"
+min="1"
+oninput="calcTotal()">
+
+<div class="total">
+
+الإجمالي:
+
+<span id="total">50</span>
+
+ريال
+
+</div>
+
+<button type="submit">
+
+دفع الآن
+
+</button>
+
+</form>
+
+</div>
+
+<script>
+
+const pricePerHour = 50;
+
+function calcTotal(){
+
+    let hours =
+    Number(
+      document.getElementById("hours").value
+    );
+
+    if(hours < 1){
+
+      hours = 1;
+
+      document.getElementById("hours").value = 1;
+    }
+
+    let total =
+    hours * pricePerHour;
+
+    document.getElementById("total").innerText =
+    total;
+}
+
+</script>
+
+</body>
+
+</html>
