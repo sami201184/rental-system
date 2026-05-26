@@ -105,18 +105,19 @@ async function addProperty() {
 const name = document.getElementById("propertyName").value;
 const type = document.getElementById("propertyType").value;
 const price = document.getElementById("propertyPrice").value;
-const image = document.getElementById("image").value;
+const imageFile = document.getElementById("image").files[0];
+
+
+const formData = new FormData();
+
+formData.append("name", name);
+formData.append("type", type);
+formData.append("price", price);
+formData.append("image", imageFile);
 
 const response = await fetch("/add-property", {
 method: "POST",
-headers: {
-"Content-Type": "application/json"
-},
-body: JSON.stringify({
-name,
-type,
-price,
-image
+body: formData
 });
 
 const data = await response.json();
@@ -158,9 +159,6 @@ document.getElementById("propertiesList").innerHTML = html;
 }
 
 loadProperties();
-</script>
-
-</body>
 <div class="add-property">
 
 <h2>إضافة عقار</h2>
@@ -173,8 +171,7 @@ loadProperties();
 </select>
 
 <input type="number" id="propertyPrice" placeholder="السعر">
-<input type="text" id="image" placeholder="رابط الصورة">
-
+<input type="file" id="image">
 <button onclick="addProperty()">إضافة</button>
 
 </div>
@@ -182,4 +179,8 @@ loadProperties();
 <hr>
 
 <div id="propertiesList"></div>
+</script>
+
+</body>
+
 </html>

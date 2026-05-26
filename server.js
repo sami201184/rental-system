@@ -1,12 +1,23 @@
 const express = require("express");
 const path = require("path");
+const multer = require("multer");
 const { Pool } = require("pg");
 
 const app = express();
 
 app.use(express.json());
 app.use(express.static("public"));
+const storage = multer.diskStorage({
+destination: function (req, file, cb) {
+cb(null, "public/uploads/");
+},
 
+filename: function (req, file, cb) {
+cb(null, Date.now() + path.extname(file.originalname));
+}
+});
+
+const upload = multer({ storage });
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
@@ -49,6 +60,8 @@ app.get("/setup-db", async (req, res) => {
   name TEXT NOT NULL,
   type TEXT NOT NULL,
   price INTEGER NOT NULL,
+    image TEXT,
+
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
     `);
@@ -73,8 +86,7 @@ app.get("/admin/bookings", async (req, res) => {
 });
 const PORT = process.env.PORT || 8080;
 // حفظ حجز جديد
-app.post("/book", async (req, res) => {
-  try {
+app.post("/add-property", upload.single("image"), async (req, res) => {  try {
     const {
       customer_name,
       phone,
@@ -239,16 +251,17 @@ alert("بيانات الدخول غير صحيحة");
 
 });
 
-app.post("/add-property", async (req, res) => {
-
+app.post("/add-property", upload.single("image"), async (req, res) => {
 try {
 
 const { name, type, price } = req.body;
+const image =
+"/uploads/" + req.file.filename;
 
 await pool.query(
-`INSERT INTO properties (name, type, price)
-VALUES ($1, $2, $3)`,
-[name, type, price]
+`INSERT INTO properties (name, type, price, image)
+VALUES ($1, $2, $3, $4)`,
+[name, type, price, image]
 );
 
 res.json({
