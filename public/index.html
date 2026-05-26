@@ -3,249 +3,104 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>نظام الحجز</title>
-
+<title>نظام الإيجار</title>
 <style>
-
-body{
-font-family:tahoma;
-background:#f3f4f6;
-padding:40px;
-}
-
-.container{
-max-width:600px;
-margin:auto;
-background:white;
-padding:30px;
-border-radius:20px;
-box-shadow:0 0 15px rgba(0,0,0,.1);
-}
-
-.tabs{
-display:flex;
-gap:10px;
-margin-bottom:25px;
-}
-
-.tab-btn{
-flex:1;
-padding:15px;
-border:none;
-border-radius:10px;
-cursor:pointer;
-font-size:18px;
-background:#e5e7eb;
-}
-
-.active{
-background:#0f172a;
-color:white;
-}
-
-.tab{
-display:none;
-}
-
-.show{
-display:block;
-}
-
-input{
-width:100%;
-padding:15px;
-margin-bottom:15px;
-border:1px solid #ddd;
-border-radius:10px;
-font-size:16px;
-}
-
-button{
-width:100%;
-padding:15px;
-border:none;
-border-radius:10px;
-font-size:18px;
-cursor:pointer;
-background:#16a34a;
-color:white;
-}
-.admin-btn{
-display:block;
-margin-top:12px;
-background:#444;
-color:#fff;
-text-decoration:none;
-padding:14px;
-border-radius:10px;
-text-align:center;
-font-weight:bold;
-}
-button:hover{
-opacity:.9;
-}
-
-.total{
-font-size:28px;
-font-weight:bold;
-text-align:center;
-margin:20px 0;
-}
-
+body{font-family:tahoma;background:#f3f4f6;padding:40px}
+.container{max-width:800px;margin:auto;background:white;padding:30px;border-radius:20px;box-shadow:0 0 15px rgba(0,0,0,.1)}
+.tabs{display:flex;gap:10px;margin-bottom:25px}
+.tab-btn{flex:1;padding:15px;border:none;border-radius:10px;cursor:pointer;font-size:18px;background:#e5e7eb;color:#111}
+.active{background:#0f172a;color:white}
+.tab{display:none}.show{display:block}
+.card{background:#f9fafb;padding:15px;border-radius:14px;margin-bottom:15px}
+input{width:100%;padding:13px;margin:6px 0;border:1px solid #ddd;border-radius:10px}
+button{width:100%;padding:13px;border:none;border-radius:10px;background:#16a34a;color:white;font-size:17px;cursor:pointer}
+.admin-btn{display:block;margin-top:15px;background:#444;color:white;text-decoration:none;padding:14px;border-radius:10px;text-align:center;font-weight:bold}
 </style>
-
 </head>
 <body>
 
 <div class="container">
-
 <div class="tabs">
-<button class="tab-btn active"
-onclick="showTab('booking', this)">
-الحجز
-</button>
-
-<button class="tab-btn"
-onclick="showTab('payment', this)">
-الدفع
-</button>
+<button class="tab-btn active" onclick="showTab('chalets',this)">الشاليهات</button>
+<button class="tab-btn" onclick="showTab('resorts',this)">الاستراحات</button>
 </div>
 
-<!-- تبويب الحجز -->
-
-<div id="booking" class="tab show">
-
-<h2>بيانات الحجز</h2>
-
-<input type="text"
-id="name"
-placeholder="اسم العميل">
-
-<input type="text"
-id="phone"
-placeholder="رقم الجوال">
-
-<input type="number"
-id="hours"
-placeholder="عدد الساعات"
-oninput="calcTotal()">
-
-<div class="total">
-الإجمالي:
-<span id="total">0</span>
-ريال
+<div id="chalets" class="tab show">
+<h2>الشاليهات</h2>
+<div id="chaletsList"></div>
 </div>
 
-<button onclick="saveBooking()">
-حفظ الحجز
-</button>
-<a href="/admin-login" class="admin-btn">
-تسجيل دخول
-</a>
+<div id="resorts" class="tab">
+<h2>الاستراحات</h2>
+<div id="resortsList"></div>
 </div>
 
-<!-- تبويب الدفع -->
-
-<div id="payment" class="tab">
-
-<h2>الدفع</h2>
-
-<div class="total">
-المبلغ المطلوب:
-<span id="paymentTotal">0</span>
-ريال
-</div>
-
-<button>
-دفع الآن
-</button>
-
-</div>
-
+<a href="/admin-login" class="admin-btn">تسجيل دخول</a>
 </div>
 
 <script>
-
 function showTab(id, btn){
-
-document.querySelectorAll(".tab")
-.forEach(tab=>{
-tab.classList.remove("show");
-});
-
-document.getElementById(id)
-.classList.add("show");
-
-document.querySelectorAll(".tab-btn")
-.forEach(b=>{
-b.classList.remove("active");
-});
-
+document.querySelectorAll(".tab").forEach(t=>t.classList.remove("show"));
+document.getElementById(id).classList.add("show");
+document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
 btn.classList.add("active");
-
 }
 
-function calcTotal(){
+async function loadProperties(){
+const res = await fetch("/properties");
+const data = await res.json();
 
-const hours =
-document.getElementById("hours").value || 0;
+const chalets = document.getElementById("chaletsList");
+const resorts = document.getElementById("resortsList");
 
-const total = hours * 50;
+chalets.innerHTML = "";
+resorts.innerHTML = "";
 
-document.getElementById("total")
-.innerText = total;
+data.forEach(p=>{
+const html = `
+<div class="card">
+<h3>${p.name}</h3>
+<p>السعر: ${p.price} ريال</p>
+<input id="name-${p.id}" placeholder="اسم العميل">
+<input id="phone-${p.id}" placeholder="رقم الجوال">
+<button onclick="bookProperty(${p.id}, '${p.name}', ${p.price})">حجز</button>
+</div>
+`;
 
-document.getElementById("paymentTotal")
-.innerText = total;
-
+if(p.type === "شاليه"){
+chalets.innerHTML += html;
+}else{
+resorts.innerHTML += html;
+}
+});
 }
 
-async function saveBooking(){
+async function bookProperty(id, propertyName, price){
+const customer_name = document.getElementById("name-" + id).value;
+const phone = document.getElementById("phone-" + id).value;
 
-const customer_name =
-document.getElementById("name").value;
-
-const phone =
-document.getElementById("phone").value;
-
-const hours =
-document.getElementById("hours").value;
-
-const total =
-document.getElementById("total").innerText;
-
-const response = await fetch("/book",{
-
+const res = await fetch("/book",{
 method:"POST",
-
-headers:{
-"Content-Type":"application/json"
-},
-
+headers:{"Content-Type":"application/json"},
 body:JSON.stringify({
 customer_name,
 phone,
-hours,
-total
+hours:1,
+total:price,
+status:"معلق"
 })
-
 });
 
-const data = await response.json();
+const data = await res.json();
 
 if(data.success){
-
-alert("تم حفظ الحجز بنجاح");
-
+alert("تم حفظ الحجز");
 }else{
-
-alert("فشل الحفظ");
-
+alert("فشل الحجز");
+}
 }
 
-}
-
+loadProperties();
 </script>
 
 </body>
