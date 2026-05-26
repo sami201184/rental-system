@@ -71,7 +71,17 @@ cursor:pointer;
 background:#16a34a;
 color:white;
 }
-
+.admin-btn{
+display:block;
+margin-top:12px;
+background:#444;
+color:#fff;
+text-decoration:none;
+padding:14px;
+border-radius:10px;
+text-align:center;
+font-weight:bold;
+}
 button:hover{
 opacity:.9;
 }
@@ -130,7 +140,9 @@ oninput="calcTotal()">
 <button onclick="saveBooking()">
 حفظ الحجز
 </button>
-
+<a href="/admin-login" class="admin-btn">
+دخول الادمن
+</a>
 </div>
 
 <!-- تبويب الدفع -->
