@@ -105,6 +105,7 @@ async function addProperty() {
 const name = document.getElementById("propertyName").value;
 const type = document.getElementById("propertyType").value;
 const price = document.getElementById("propertyPrice").value;
+const image = document.getElementById("image").value;
 
 const response = await fetch("/add-property", {
 method: "POST",
@@ -114,8 +115,8 @@ headers: {
 body: JSON.stringify({
 name,
 type,
-price
-})
+price,
+image
 });
 
 const data = await response.json();
@@ -172,6 +173,7 @@ loadProperties();
 </select>
 
 <input type="number" id="propertyPrice" placeholder="السعر">
+<input type="text" id="image" placeholder="رابط الصورة">
 
 <button onclick="addProperty()">إضافة</button>
 
