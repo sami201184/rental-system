@@ -161,6 +161,8 @@ document.getElementById("propertiesList").innerHTML = html;
 loadProperties();
 <div class="add-property">
 
+<div class="add-property">
+</script>
 <h2>إضافة عقار</h2>
 
 <input type="text" id="propertyName" placeholder="اسم العقار">
@@ -171,7 +173,9 @@ loadProperties();
 </select>
 
 <input type="number" id="propertyPrice" placeholder="السعر">
-<input type="file" id="image">
+
+<input type="file" id="image" accept="image/*">
+
 <button onclick="addProperty()">إضافة</button>
 
 </div>
@@ -179,7 +183,6 @@ loadProperties();
 <hr>
 
 <div id="propertiesList"></div>
-</script>
 
 </body>
 
