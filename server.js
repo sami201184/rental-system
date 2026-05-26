@@ -126,6 +126,110 @@ app.get("/bookings", async (req, res) => {
 
   }
 });
+// صفحة تسجيل دخول الأدمن
+app.get("/admin-login", (req, res) => {
+
+res.send(`
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>دخول الإدارة</title>
+
+<style>
+
+body{
+font-family:tahoma;
+background:#f3f4f6;
+padding:40px;
+}
+
+.box{
+max-width:400px;
+margin:auto;
+background:white;
+padding:30px;
+border-radius:15px;
+box-shadow:0 0 10px rgba(0,0,0,.1);
+}
+
+input{
+width:100%;
+padding:15px;
+margin-bottom:15px;
+border:1px solid #ddd;
+border-radius:10px;
+font-size:16px;
+}
+
+button{
+width:100%;
+padding:15px;
+background:#0f172a;
+color:white;
+border:none;
+border-radius:10px;
+font-size:18px;
+cursor:pointer;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="box">
+
+<h2>تسجيل دخول الإدارة</h2>
+
+<input type="text" id="username" placeholder="اسم المستخدم">
+
+<input type="password" id="password" placeholder="كلمة المرور">
+
+<button onclick="login()">
+دخول
+</button>
+
+</div>
+
+<script>
+
+function login(){
+
+const username =
+document.getElementById("username").value;
+
+const password =
+document.getElementById("password").value;
+
+if(
+username === "admin" &&
+password === "123456"
+){
+
+window.location.href = "/admin.html";
+
+}else{
+
+alert("بيانات الدخول غير صحيحة");
+
+}
+
+}
+
+</script>
+
+</body>
+</html>
+
+`);
+
+});
 app.listen(PORT, () => {
   console.log("Server running on port " + PORT);
 });
