@@ -59,6 +59,7 @@ resorts.innerHTML = "";
 data.forEach(p=>{
 const html = `
 <div class="card">
+${p.image ? `<img src="${p.image}" style="width:100%;border-radius:14px;margin-bottom:12px;object-fit:cover;" />` : ""}
 <h3>${p.name}</h3>
 <p>السعر: ${p.price} ريال</p>
 <input id="name-${p.id}" placeholder="اسم العميل">

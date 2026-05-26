@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
+
 <head>
 <meta charset="UTF-8">
 <title>لوحة الإدارة</title>
@@ -20,7 +21,7 @@ body{
   border-radius:16px;
 }
 
-h1{
+h1,h2{
   text-align:center;
 }
 
@@ -45,44 +46,111 @@ th{
   color:green;
   font-weight:bold;
 }
+
+.add-property{
+  max-width:1000px;
+  margin:25px auto;
+  background:white;
+  padding:20px;
+  border-radius:16px;
+}
+
+input,select,button{
+  padding:10px;
+  margin:5px;
+}
+
+button{
+  cursor:pointer;
+  background:#111827;
+  color:white;
+  border:none;
+  border-radius:8px;
+}
+
+.property-card{
+  background:#fff;
+  padding:15px;
+  margin-bottom:10px;
+  border-radius:10px;
+  border:1px solid #ddd;
+}
 </style>
+
 </head>
 
 <body>
 
 <div class="box">
-  <h1>لوحة الإدارة</h1>
 
-  <table>
-    <thead>
-      <tr>
-        <th>رقم الحجز</th>
-        <th>اسم العميل</th>
-        <th>الجوال</th>
-        <th>عدد الساعات</th>
-        <th>الإجمالي</th>
-        <th>الحالة</th>
-        <th>التاريخ</th>
-      </tr>
-    </thead>
-
-    <tbody id="bookings"></tbody>
-  </table>
+<div style="text-align:center; margin-bottom:20px;">
+  <button onclick="window.location.href='/'">الصفحة الرئيسية</button>
 </div>
 
+<h1>لوحة الإدارة</h1>
+
+<table>
+
+<thead>
+<tr>
+<th>رقم الحجز</th>
+<th>اسم العميل</th>
+<th>الجوال</th>
+<th>عدد الساعات</th>
+<th>الإجمالي</th>
+<th>الحالة</th>
+<th>التاريخ</th>
+</tr>
+</thead>
+
+<tbody id="bookings"></tbody>
+
+</table>
+
+</div>
+
+
+<div class="add-property">
+
+<h2>إضافة عقار</h2>
+
+<input type="text" id="propertyName" placeholder="اسم العقار">
+
+<select id="propertyType">
+<option value="استراحة">استراحة</option>
+<option value="شاليه">شاليه</option>
+</select>
+
+<input type="number" id="propertyPrice" placeholder="السعر">
+
+<input type="file" id="propertyImage" accept="image/*">
+
+<button onclick="addProperty()">إضافة</button>
+
+<hr>
+
+<div id="propertiesList"></div>
+
+</div>
+
+
 <script>
+
 async function loadBookings(){
+
   const res = await fetch("/admin/bookings");
   const data = await res.json();
 
   const tbody = document.getElementById("bookings");
 
   if(data.length === 0){
+
     tbody.innerHTML = `
       <tr>
         <td colspan="7">لا توجد حجوزات حتى الآن</td>
       </tr>
     `;
+
     return;
   }
 
@@ -97,92 +165,89 @@ async function loadBookings(){
       <td>${new Date(b.created_at).toLocaleString("ar-SA")}</td>
     </tr>
   `).join("");
+
 }
+
+
+
+async function addProperty(){
+
+  const name = document.getElementById("propertyName").value;
+  const type = document.getElementById("propertyType").value;
+  const price = document.getElementById("propertyPrice").value;
+  const imageFile = document.getElementById("propertyImage").files[0];
+
+  const formData = new FormData();
+  formData.append("name", name);
+  formData.append("type", type);
+  formData.append("price", price);
+  if (imageFile) {
+    formData.append("image", imageFile);
+  }
+
+  const response = await fetch("/add-property", {
+    method: "POST",
+    body: formData
+  });
+
+  const data = await response.json();
+
+  if (data.success) {
+    alert(data.message || "تمت إضافة العقار");
+    document.getElementById("propertyName").value = "";
+    document.getElementById("propertyPrice").value = "";
+    document.getElementById("propertyImage").value = "";
+    loadProperties();
+  } else {
+    alert(data.error || "حدث خطأ أثناء الإضافة");
+  }
+}
+
+
+
+async function loadProperties(){
+
+  const response = await fetch("/properties");
+  const properties = await response.json();
+
+  let html = "";
+
+  properties.forEach(property => {
+
+    html += `
+      <div class="property-card">
+
+        ${property.image ? `
+          <img 
+            src="${property.image}" 
+            style="
+              width:180px;
+              border-radius:10px;
+              margin-bottom:10px;
+            "
+          >
+        ` : ""}
+
+        <h3>${property.name}</h3>
+
+        <p>${property.type}</p>
+
+        <p>${property.price} ريال</p>
+
+      </div>
+    `;
+
+  });
+
+  document.getElementById("propertiesList").innerHTML = html;
+
+}
+
 
 loadBookings();
-async function addProperty() {
-
-const name = document.getElementById("propertyName").value;
-const type = document.getElementById("propertyType").value;
-const price = document.getElementById("propertyPrice").value;
-const imageFile = document.getElementById("image").files[0];
-
-
-const formData = new FormData();
-
-formData.append("name", name);
-formData.append("type", type);
-formData.append("price", price);
-formData.append("image", imageFile);
-
-const response = await fetch("/add-property", {
-method: "POST",
-body: formData
-});
-
-const data = await response.json();
-
-alert("تمت إضافة العقار");
-
 loadProperties();
-}
 
-async function loadProperties() {
-
-const response = await fetch("/properties");
-const properties = await response.json();
-
-let html = "";
-
-properties.forEach(property => {
-
-html += `
-<div style="
-background:#fff;
-padding:15px;
-margin-bottom:10px;
-border-radius:10px;
-">
-
-<h3>${property.name}</h3>
-
-<p>${property.type}</p>
-
-<p>${property.price} ريال</p>
-
-</div>
-`;
-
-});
-
-document.getElementById("propertiesList").innerHTML = html;
-}
-
-loadProperties();
-<div class="add-property">
-
-<div class="add-property">
 </script>
-<h2>إضافة عقار</h2>
-
-<input type="text" id="propertyName" placeholder="اسم العقار">
-
-<select id="propertyType">
-<option value="استراحة">استراحة</option>
-<option value="شاليه">شاليه</option>
-</select>
-
-<input type="number" id="propertyPrice" placeholder="السعر">
-
-<input type="file" id="image" accept="image/*">
-
-<button onclick="addProperty()">إضافة</button>
-
-</div>
-
-<hr>
-
-<div id="propertiesList"></div>
 
 </body>
 

@@ -1,9 +1,20 @@
+
+require("dotenv").config();
+
 const express = require("express");
 const path = require("path");
 const multer = require("multer");
 const { Pool } = require("pg");
+const fs = require("fs");
 
 const app = express();
+
+if (!fs.existsSync("public/uploads")) {
+  fs.mkdirSync("public/uploads", { recursive: true });
+}
+
+
+
 
 app.use(express.json());
 app.use(express.static("public"));
@@ -16,14 +27,38 @@ filename: function (req, file, cb) {
 cb(null, Date.now() + path.extname(file.originalname));
 }
 });
-
 const upload = multer({ storage });
+
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
     rejectUnauthorized: false,
   },
 });
+
+const propertiesFile = path.join(__dirname, "data", "properties.json");
+
+function ensurePropertiesStorage() {
+  const dir = path.dirname(propertiesFile);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+  if (!fs.existsSync(propertiesFile)) {
+    fs.writeFileSync(propertiesFile, "[]", "utf8");
+  }
+}
+
+function loadPropertiesFromFile() {
+  ensurePropertiesStorage();
+  const content = fs.readFileSync(propertiesFile, "utf8");
+  return content ? JSON.parse(content) : [];
+}
+
+function savePropertyToFile(property) {
+  const properties = loadPropertiesFromFile();
+  properties.unshift(property);
+  fs.writeFileSync(propertiesFile, JSON.stringify(properties, null, 2), "utf8");
+}
 
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
@@ -64,6 +99,8 @@ app.get("/setup-db", async (req, res) => {
 
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+ALTER TABLE properties ADD COLUMN IF NOT EXISTS image TEXT;
     `);
 
     
@@ -86,14 +123,9 @@ app.get("/admin/bookings", async (req, res) => {
 });
 const PORT = process.env.PORT || 8080;
 // حفظ حجز جديد
-app.post("/add-property", upload.single("image"), async (req, res) => {  try {
-    const {
-      customer_name,
-      phone,
-      hours,
-      total,
-      status
-    } = req.body;
+app.post("/book", async (req, res) => {
+  try {
+    const { customer_name, phone, hours, total, status } = req.body;
 
     const result = await pool.query(
       `
@@ -102,13 +134,7 @@ app.post("/add-property", upload.single("image"), async (req, res) => {  try {
       VALUES ($1,$2,$3,$4,$5)
       RETURNING *
       `,
-      [
-        customer_name,
-        phone,
-        hours,
-        total,
-        status || "معلق"
-      ]
+      [customer_name, phone, hours, total, status || "معلق"]
     );
 
     res.json({
@@ -252,52 +278,55 @@ alert("بيانات الدخول غير صحيحة");
 });
 
 app.post("/add-property", upload.single("image"), async (req, res) => {
-try {
+  try {
+    const { name, type, price, image } = req.body;
 
-const { name, type, price } = req.body;
-const image =
-"/uploads/" + req.file.filename;
+    const imageUrl = req.file
+      ? "/uploads/" + req.file.filename
+      : (image || "");
 
-await pool.query(
-`INSERT INTO properties (name, type, price, image)
-VALUES ($1, $2, $3, $4)`,
-[name, type, price, image]
-);
+    const property = {
+      name,
+      type,
+      price: price ? Number(price) : null,
+      image: imageUrl,
+      created_at: new Date().toISOString(),
+    };
 
-res.json({
-success: true,
-message: "تمت إضافة العقار"
-});
+    savePropertyToFile(property);
 
-} catch (error) {
+    res.json({
+      success: true,
+      message: "تمت إضافة العقار"
+    });
 
-res.json({
-success: false,
-error: error.message
-});
+  } catch (error) {
+    console.log("ADD PROPERTY ERROR:", error);
 
-}
-
+    res.json({
+      success: false,
+      error: error.toString()
+    });
+  }
 });
 
 app.get("/properties", async (req, res) => {
 
-try {
+  try {
 
-const result = await pool.query(
-"SELECT * FROM properties ORDER BY id DESC"
-);
+    const result = await pool.query(
+      "SELECT * FROM properties ORDER BY id DESC"
+    );
 
-res.json(result.rows);
+    res.json(result.rows);
 
-} catch (error) {
+  } catch (error) {
 
-res.json({
-success: false,
-error: error.message
-});
+    console.log("PROPERTIES DB ERROR, fallback to file:", error.message);
+    const properties = loadPropertiesFromFile();
+    res.json(properties);
 
-}
+  }
 
 });
 app.listen(PORT, () => {
