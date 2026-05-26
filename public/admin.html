@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>لوحة الإدارة</title>
+
+<style>
+body{
+  font-family:Tahoma;
+  background:#f3f4f6;
+  margin:0;
+  padding:20px;
+}
+
+.box{
+  max-width:1000px;
+  margin:auto;
+  background:white;
+  padding:20px;
+  border-radius:16px;
+}
+
+h1{
+  text-align:center;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  margin-top:20px;
+}
+
+th,td{
+  border:1px solid #ddd;
+  padding:12px;
+  text-align:center;
+}
+
+th{
+  background:#111827;
+  color:white;
+}
+
+.status{
+  color:green;
+  font-weight:bold;
+}
+</style>
+</head>
+
+<body>
+
+<div class="box">
+  <h1>لوحة الإدارة</h1>
+
+  <table>
+    <thead>
+      <tr>
+        <th>رقم الحجز</th>
+        <th>اسم العميل</th>
+        <th>الجوال</th>
+        <th>عدد الساعات</th>
+        <th>الإجمالي</th>
+        <th>الحالة</th>
+        <th>التاريخ</th>
+      </tr>
+    </thead>
+
+    <tbody id="bookings"></tbody>
+  </table>
+</div>
+
+<script>
+async function loadBookings(){
+  const res = await fetch("/admin/bookings");
+  const data = await res.json();
+
+  const tbody = document.getElementById("bookings");
+
+  if(data.length === 0){
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7">لا توجد حجوزات حتى الآن</td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = data.map(b => `
+    <tr>
+      <td>${b.id}</td>
+      <td>${b.customer_name || "-"}</td>
+      <td>${b.phone || "-"}</td>
+      <td>${b.hours || "-"}</td>
+      <td>${b.total || "-"} ريال</td>
+      <td class="status">${b.status}</td>
+      <td>${new Date(b.created_at).toLocaleString("ar-SA")}</td>
+    </tr>
+  `).join("");
+}
+
+loadBookings();
+</script>
+
+</body>
+</html>

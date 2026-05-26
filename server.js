@@ -32,7 +32,37 @@ app.get("/test-db", async (req, res) => {
     });
   }
 });
+app.get("/setup-db", async (req, res) => {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS bookings (
+        id SERIAL PRIMARY KEY,
+        customer_name TEXT,
+        phone TEXT,
+        hours INTEGER,
+        total INTEGER,
+        status TEXT DEFAULT 'new',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
 
+    res.json({ success: true, message: "تم إنشاء جدول الحجوزات" });
+  } catch (error) {
+    res.json({ success: false, error: error.message });
+  }
+});
+
+app.get("/admin/bookings", async (req, res) => {
+  try {
+    const result = await pool.query(
+      "SELECT * FROM bookings ORDER BY id DESC"
+    );
+
+    res.json(result.rows);
+  } catch (error) {
+    res.json({ success: false, error: error.message });
+  }
+});
 const PORT = process.env.PORT || 8080;
 
 app.listen(PORT, () => {
