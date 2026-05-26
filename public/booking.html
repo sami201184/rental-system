@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>حجز جديد</title>
+
+<style>
+
+body{
+font-family:tahoma;
+background:#f4f4f4;
+padding:40px;
+}
+
+.container{
+max-width:500px;
+margin:auto;
+background:white;
+padding:30px;
+border-radius:15px;
+box-shadow:0 0 10px rgba(0,0,0,.1);
+}
+
+h1{
+text-align:center;
+margin-bottom:30px;
+}
+
+input{
+width:100%;
+padding:15px;
+margin-bottom:15px;
+border:1px solid #ddd;
+border-radius:10px;
+font-size:16px;
+}
+
+button{
+width:100%;
+padding:15px;
+background:#0f172a;
+color:white;
+border:none;
+border-radius:10px;
+font-size:18px;
+cursor:pointer;
+}
+
+button:hover{
+background:#1e293b;
+}
+
+</style>
+
+</head>
+<body>
+
+<div class="container">
+
+<h1>بيانات الحجز</h1>
+
+<input type="text" id="name" placeholder="اسم العميل">
+
+<input type="text" id="phone" placeholder="رقم الجوال">
+
+<input type="number" id="hours" placeholder="عدد الساعات">
+
+<input type="number" id="total" placeholder="الإجمالي">
+
+<button onclick="goToPayment()">
+الانتقال للدفع
+</button>
+
+</div>
+
+<script>
+
+function goToPayment(){
+
+const customer_name =
+document.getElementById("name").value;
+
+const phone =
+document.getElementById("phone").value;
+
+const hours =
+document.getElementById("hours").value;
+
+const total =
+document.getElementById("total").value;
+
+localStorage.setItem("customer_name", customer_name);
+localStorage.setItem("phone", phone);
+localStorage.setItem("hours", hours);
+localStorage.setItem("total", total);
+
+window.location.href = "/";
+
+}
+
+</script>
+
+</body>
+</html>
