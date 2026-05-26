@@ -64,7 +64,68 @@ app.get("/admin/bookings", async (req, res) => {
   }
 });
 const PORT = process.env.PORT || 8080;
+// حفظ حجز جديد
+app.post("/book", async (req, res) => {
+  try {
+    const {
+      customer_name,
+      phone,
+      hours,
+      total,
+      status
+    } = req.body;
 
+    const result = await pool.query(
+      `
+      INSERT INTO bookings
+      (customer_name, phone, hours, total, status)
+      VALUES ($1,$2,$3,$4,$5)
+      RETURNING *
+      `,
+      [
+        customer_name,
+        phone,
+        hours,
+        total,
+        status || "معلق"
+      ]
+    );
+
+    res.json({
+      success: true,
+      booking: result.rows[0]
+    });
+
+  } catch (err) {
+    console.log(err);
+
+    res.json({
+      success: false,
+      error: err.message
+    });
+  }
+});
+
+// جلب الحجوزات
+app.get("/bookings", async (req, res) => {
+  try {
+
+    const result = await pool.query(`
+      SELECT * FROM bookings
+      ORDER BY id DESC
+    `);
+
+    res.json(result.rows);
+
+  } catch (err) {
+
+    res.json({
+      success: false,
+      error: err.message
+    });
+
+  }
+});
 app.listen(PORT, () => {
   console.log("Server running on port " + PORT);
 });
