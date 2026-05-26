@@ -44,8 +44,16 @@ app.get("/setup-db", async (req, res) => {
         status TEXT DEFAULT 'new',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+      CREATE TABLE IF NOT EXISTS properties (
+  id SERIAL PRIMARY KEY,
+  name TEXT NOT NULL,
+  type TEXT NOT NULL,
+  price INTEGER NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
     `);
 
+    
     res.json({ success: true, message: "تم إنشاء جدول الحجوزات" });
   } catch (error) {
     res.json({ success: false, error: error.message });
@@ -228,6 +236,55 @@ alert("بيانات الدخول غير صحيحة");
 </html>
 
 `);
+
+});
+
+app.post("/add-property", async (req, res) => {
+
+try {
+
+const { name, type, price } = req.body;
+
+await pool.query(
+`INSERT INTO properties (name, type, price)
+VALUES ($1, $2, $3)`,
+[name, type, price]
+);
+
+res.json({
+success: true,
+message: "تمت إضافة العقار"
+});
+
+} catch (error) {
+
+res.json({
+success: false,
+error: error.message
+});
+
+}
+
+});
+
+app.get("/properties", async (req, res) => {
+
+try {
+
+const result = await pool.query(
+"SELECT * FROM properties ORDER BY id DESC"
+);
+
+res.json(result.rows);
+
+} catch (error) {
+
+res.json({
+success: false,
+error: error.message
+});
+
+}
 
 });
 app.listen(PORT, () => {
