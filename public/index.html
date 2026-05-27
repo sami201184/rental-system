@@ -38,67 +38,128 @@ button{width:100%;padding:13px;border:none;border-radius:10px;background:#16a34a
 <a href="/admin-login" class="admin-btn">تسجيل دخول</a>
 </div>
 
+<div id="paymentModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(2px);justify-content:center;align-items:center;z-index:1000;">
+  <div style="background:white;border-radius:18px;padding:24px;max-width:420px;width:90%;box-shadow:0 0 25px rgba(0,0,0,.25);position:relative;">
+    <button onclick="hidePaymentModal()" style="position:absolute;top:12px;right:12px;border:none;background:transparent;font-size:22px;line-height:1;width:34px;height:34px;display:flex;justify-content:center;align-items:center;cursor:pointer;color:#111827;">×</button>
+    <h2 style="margin-top:0;text-align:center;">إتمام الدفع</h2>
+    <p id="paymentTitle" style="text-align:center;margin:0 0 18px 0;color:#111827;font-weight:600;"></p>
+    <div style="display:grid;gap:12px;">
+      <input id="paymentName" placeholder="اسم العميل" type="text" style="padding:13px;border:1px solid #ddd;border-radius:10px;" />
+      <input id="paymentPhone" placeholder="رقم الجوال" type="text" style="padding:13px;border:1px solid #ddd;border-radius:10px;" />
+      <input id="paymentAmount" placeholder="المبلغ" type="number" readonly style="padding:13px;border:1px solid #ddd;border-radius:10px;background:#f9fafb;" />
+      <input id="paymentCard" placeholder="رقم البطاقة (اختياري)" type="text" style="padding:13px;border:1px solid #ddd;border-radius:10px;" />
+      <button onclick="completeBooking()" style="width:100%;padding:13px;border:none;border-radius:10px;background:#0f172a;color:white;font-size:17px;cursor:pointer;">دفع الآن</button>
+      <button onclick="startApplePay()" style="width:100%;padding:13px;border:none;border-radius:10px;background:black;color:white;font-size:17px;cursor:pointer;margin-top:8px;">الدفع بأبل باي</button>
+    </div>
+  </div>
+</div>
+
 <script>
+let currentBooking = null;
 function showTab(id, btn){
-document.querySelectorAll(".tab").forEach(t=>t.classList.remove("show"));
-document.getElementById(id).classList.add("show");
-document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
-btn.classList.add("active");
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("show"));
+  document.getElementById(id).classList.add("show");
+  document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
 }
 
 async function loadProperties(){
-const res = await fetch("/properties");
-const data = await res.json();
+  const res = await fetch("/properties");
+  const data = await res.json();
 
-const chalets = document.getElementById("chaletsList");
-const resorts = document.getElementById("resortsList");
+  const chalets = document.getElementById("chaletsList");
+  const resorts = document.getElementById("resortsList");
 
-chalets.innerHTML = "";
-resorts.innerHTML = "";
+  chalets.innerHTML = "";
+  resorts.innerHTML = "";
 
-data.forEach(p=>{
-const html = `
+  data.forEach(p=>{
+    const html = `
 <div class="card">
 ${p.image ? `<img src="${p.image}" style="width:100%;border-radius:14px;margin-bottom:12px;object-fit:cover;" />` : ""}
 <h3>${p.name}</h3>
 <p>السعر: ${p.price} ريال</p>
 <input id="name-${p.id}" placeholder="اسم العميل">
 <input id="phone-${p.id}" placeholder="رقم الجوال">
-<button onclick="bookProperty(${p.id}, '${p.name}', ${p.price})">حجز</button>
+<button onclick="preparePayment(${p.id}, '${p.name}', ${p.price})">حجز</button>
 </div>
 `;
 
-if(p.type === "شاليه"){
-chalets.innerHTML += html;
-}else{
-resorts.innerHTML += html;
+    if(p.type === "شاليه"){
+      chalets.innerHTML += html;
+    } else {
+      resorts.innerHTML += html;
+    }
+  });
 }
-});
+
+function preparePayment(id, propertyName, price){
+  const customer_name = document.getElementById("name-" + id).value;
+  const phone = document.getElementById("phone-" + id).value;
+
+  if(!customer_name.trim() || !phone.trim()){
+    alert("يرجى إدخال اسم العميل ورقم الجوال قبل المتابعة للدفع.");
+    return;
+  }
+
+  currentBooking = { id, propertyName, price, customer_name, phone };
+  document.getElementById("paymentTitle").textContent = `عقار ${propertyName} - ${price} ريال`;
+  document.getElementById("paymentName").value = customer_name;
+  document.getElementById("paymentPhone").value = phone;
+  document.getElementById("paymentAmount").value = price;
+  document.getElementById("paymentCard").value = "";
+  document.getElementById("paymentModal").style.display = "flex";
 }
 
-async function bookProperty(id, propertyName, price){
-const customer_name = document.getElementById("name-" + id).value;
-const phone = document.getElementById("phone-" + id).value;
-
-const res = await fetch("/book",{
-method:"POST",
-headers:{"Content-Type":"application/json"},
-body:JSON.stringify({
-customer_name,
-phone,
-hours:1,
-total:price,
-status:"معلق"
-})
-});
-
-const data = await res.json();
-
-if(data.success){
-alert("تم حفظ الحجز");
-}else{
-alert("فشل الحجز");
+function hidePaymentModal(){
+  document.getElementById("paymentModal").style.display = "none";
+  currentBooking = null;
 }
+
+async function completeBooking(){
+  if(!currentBooking){
+    hidePaymentModal();
+    return;
+  }
+
+  const customer_name = document.getElementById("paymentName").value.trim();
+  const phone = document.getElementById("paymentPhone").value.trim();
+  const total = Number(document.getElementById("paymentAmount").value);
+
+  if(!customer_name || !phone){
+    alert("يرجى تعبئة بيانات العميل قبل الدفع.");
+    return;
+  }
+
+  const res = await fetch("/book", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      customer_name,
+      phone,
+      hours: 1,
+      total,
+      status: "معلق"
+    })
+  });
+
+  const data = await res.json();
+  hidePaymentModal();
+
+  if(data.success){
+    alert("تم الدفع والحجز بنجاح.");
+    loadProperties();
+  } else {
+    alert("فشل الحجز، حاول مرة أخرى.");
+  }
+}
+
+function startApplePay(){
+  if(window.ApplePaySession && ApplePaySession.canMakePayments()){
+    alert("جاري فتح Apple Pay ...\nهذه تجربة أولية، يتطلب تكامل أبل باي الحقيقي إعداد تاجر وموقع HTTPS.");
+  } else {
+    window.open("https://www.apple.com/apple-pay/", "_blank");
+  }
 }
 
 loadProperties();
