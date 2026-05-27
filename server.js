@@ -38,6 +38,39 @@ const pool = new Pool({
 
 const propertiesFile = path.join(__dirname, "data", "properties.json");
 
+async function initDb() {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS bookings (
+        id SERIAL PRIMARY KEY,
+        customer_name TEXT,
+        phone TEXT,
+        hours INTEGER,
+        total INTEGER,
+        status TEXT DEFAULT 'new',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS properties (
+        id SERIAL PRIMARY KEY,
+        name TEXT NOT NULL,
+        type TEXT NOT NULL,
+        price INTEGER NOT NULL,
+        image TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    await pool.query(`ALTER TABLE properties ADD COLUMN IF NOT EXISTS image TEXT;`);
+
+    console.log("DB initialized successfully");
+  } catch (error) {
+    console.error("DB INIT ERROR:", error.message);
+  }
+}
+
 function ensurePropertiesStorage() {
   const dir = path.dirname(propertiesFile);
   if (!fs.existsSync(dir)) {
@@ -50,13 +83,24 @@ function ensurePropertiesStorage() {
 
 function loadPropertiesFromFile() {
   ensurePropertiesStorage();
-  const content = fs.readFileSync(propertiesFile, "utf8");
-  return content ? JSON.parse(content) : [];
+  let content = fs.readFileSync(propertiesFile, "utf8");
+  if (!content || !content.trim()) {
+    return [];
+  }
+
+  try {
+    return JSON.parse(content);
+  } catch (error) {
+    console.error("Invalid JSON in properties file, resetting to empty array:", error.message);
+    fs.writeFileSync(propertiesFile, "[]", "utf8");
+    return [];
+  }
 }
 
 function savePropertyToFile(property) {
   const properties = loadPropertiesFromFile();
   properties.unshift(property);
+  ensurePropertiesStorage();
   fs.writeFileSync(propertiesFile, JSON.stringify(properties, null, 2), "utf8");
 }
 
@@ -293,11 +337,31 @@ app.post("/add-property", upload.single("image"), async (req, res) => {
       created_at: new Date().toISOString(),
     };
 
-    savePropertyToFile(property);
+    let savedToDb = false;
+    try {
+      await pool.query(
+        `
+        INSERT INTO properties (name, type, price, image)
+        VALUES ($1, $2, $3, $4)
+        `,
+        [property.name, property.type, property.price, property.image]
+      );
+      savedToDb = true;
+    } catch (dbError) {
+      console.error("ADD PROPERTY DB ERROR, fallback to file:", dbError.message);
+      try {
+        savePropertyToFile(property);
+      } catch (fileError) {
+        console.error("SAVE PROPERTY FILE ERROR:", fileError.message);
+        throw fileError;
+      }
+    }
 
     res.json({
       success: true,
-      message: "تمت إضافة العقار"
+      message: "تمت إضافة العقار",
+      savedToDb,
+      image: property.image
     });
 
   } catch (error) {
@@ -329,6 +393,14 @@ app.get("/properties", async (req, res) => {
   }
 
 });
-app.listen(PORT, () => {
-  console.log("Server running on port " + PORT);
+
+initDb().then(() => {
+  app.listen(PORT, () => {
+    console.log("Server running on port " + PORT);
+  });
+}).catch((error) => {
+  console.error("Failed to initialize DB:", error.message);
+  app.listen(PORT, () => {
+    console.log("Server running on port " + PORT);
+  });
 });
